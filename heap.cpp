@@ -1,143 +1,121 @@
 #include <iostream>
-#include <vector>
-#include <ctime>
 #include <random>
+#include <vector>
 
 using namespace std;
 
-void generateValues(std::vector<long>& arr, int N)
+void generateRandomVector(std::vector<int>& arr, int size)
 {
     srand(time(NULL));
-    arr.resize(N);
-    for (int i = 0; i < N; i++)
+    arr.resize(size);
+    for (int& value : arr)
     {
-        arr[i] = rand() % 100000;
+        value = rand() % 1000;
     }
 }
 
-class Heap
+int getLeftChild(int parent)
 {
-public:
-    Heap()
+    return parent * 2;
+}
+
+int getRightChild(int parent)
+{
+    return parent * 2 + 1;
+}
+
+int getParent(int child)
+{
+    return child / 2;
+}
+
+bool comp(const int& a, const int& b)
+{
+    return a > b;
+}
+
+std::vector<int> heapify(const std::vector<int>& inputs)
+{
+    // start index from 1 for easier calculation
+    std::vector<int> heap(1);
+    heap.reserve(inputs.size() + 1);
+
+    for (const int& input : inputs)
     {
-        heap.resize(1);
-        heap.shrink_to_fit();
-    }
-    
-    void push(int v)
-    {
-        heap.push_back(v);
-        int index = heap.size() - 1;
-        while (1 < index)
+        heap.emplace_back();
+
+        int newIndex = heap.size() - 1;
+        int parentIndex = getParent(newIndex);
+        while (parentIndex >= 1 && comp(heap[parentIndex], input))
         {
-            int parentIndex = parent(index);
-            if (heap[parentIndex] > heap[index])
-            {
-                swap(heap[parentIndex], heap[index]);
-                index = parentIndex;
-            }
-            else
-            {
-                break;
-            }
+            heap[newIndex] = heap[parentIndex];
+            newIndex = parentIndex;
+            parentIndex = getParent(newIndex);
         }
+        heap[newIndex] = input;
     }
+    return heap;
+}
 
-    int top()
-    {
-        return heap[1];
-    }
+bool empty(const std::vector<int>& heap)
+{
+    return heap.size() == 1;
+}
 
-    void pop()
+int top(const std::vector<int>& heap)
+{
+    if (empty(heap)) return -1;
+
+    return heap[1];
+}
+
+void pop(std::vector<int>& heap)
+{
+    if (empty(heap)) return;
+
+    int rootIndex = 1;
+    int newValue = heap.back();
+    heap.pop_back();
+
+    int maxIndex = heap.size() - 1;
+    while (rootIndex <= maxIndex)
     {
-        heap[1] = heap.back();
-        heap.pop_back();
+        int children = getLeftChild(rootIndex);
+        if (children > maxIndex)
+            break;
         
-        int index = 1;
-        while (index < heap.size())
-        {
-            int existingIndex = index;
-            
-            int leftIndex = leftChild(existingIndex);
-            if (leftIndex < heap.size())
-            {
-                if (heap[existingIndex] > heap[leftIndex])
-                {
-                    swap(heap[existingIndex], heap[leftIndex]);
-                    index = leftIndex;
-                }
-            }
+        if (children + 1 <= maxIndex && comp(heap[children], heap[children + 1]))
+            children++;
+        
+        if (comp(heap[children], newValue))
+            break;
 
-            int rightIndex = rightChild(existingIndex);
-            if (rightIndex < heap.size())
-            {
-                if (heap[existingIndex] > heap[rightIndex])
-                {
-                    swap(heap[existingIndex], heap[rightIndex]);
-                    index = rightIndex;
-                }
-            }
-
-            if (existingIndex == index)
-                break;
-        }
+        heap[rootIndex] = heap[children];
+        rootIndex = children;
     }
-
-    bool empty()
-    {
-        return heap.size() == 1;
-    }
-
-private:
-    int parent(int idx)
-    {
-        return idx / 2;
-    }
-
-    int leftChild(int idx)
-    {
-        return idx * 2;
-    }
-
-    int rightChild(int idx)
-    {
-        return idx * 2 + 1;
-    }
-
-    int reorderChild(int parentIndex, int childIndex)
-    {
-        int result = parentIndex;
-        if (childIndex < heap.size())
-        {
-            if (heap[parentIndex] < heap[childIndex])
-            {
-                swap(heap[parentIndex], heap[childIndex]);
-                result = childIndex;
-            }
-        }
-        return result;
-    }
-
-    std::vector<int> heap;
-};
-
-
+    heap[rootIndex] = newValue;
+}
 
 int main()
 {
-    int size = 10;
-    Heap heap;
-    heap.push(10);
-    heap.push(20);
-    heap.push(30);
-    heap.push(40);
-    heap.push(50);
-    heap.push(60);
-    heap.push(10);
-    
-    while (heap.empty() == false)
+    std::vector<int> data;
+    generateRandomVector(data, 15000);
+
+    std::vector<int> heap = heapify(data);
+
+    std::sort(data.begin(), data.end(), std::greater<int>());
+    std::vector<int> res;
+    while (empty(heap) == false)
     {
-        cout << heap.top() << endl;
-        heap.pop();
+        res.push_back(top(heap));
+        pop(heap);
     }
+
+    for (int i = 0; i < res.size(); i++)
+    {
+        if (res[i] != data[i])
+            cout << "Wrong!" << "\n";
+    }
+
+    cout << "Correct :) " << "\n";
 }
